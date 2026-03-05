@@ -1,0 +1,135 @@
+// ─────────────────────────────────────────────────────────────
+//  firestore.rules  —  FINAL (Sprint 4)
+//  Covers: users, logs, blockHistory collections.
+//  Deploy: firebase deploy --only firestore:rules
+// ─────────────────────────────────────────────────────────────
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ═══════════════════════════════════════════════════════
+    //  Helper functions
+    // ═══════════════════════════════════════════════════════
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isNEUEmail() {
+      return request.auth.token.email.matches('.*@neu\\.edu\\.ph$');
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function callerDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && callerDoc().role == 'admin';
+    }
+
+    /**
+     * Returns true when the calling user is NOT blocked.
+     * Safe to call even if `isBlocked` field doesn't exist yet
+     * (treats absence as false — unblocked).
+     */
+    function isNotBlocked() {
+      let d = callerDoc();
+      return !(d.keys().hasAny(['isBlocked']) && d.isBlocked == true);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  /users/{uid}
+    // ═══════════════════════════════════════════════════════
+
+    match /users/{uid} {
+
+      // Read own document or admin reads any
+      allow get:  if isSignedIn() && isNEUEmail() && (isOwner(uid) || isAdmin());
+      allow list: if isAdmin();   // needed for email prefix search
+
+      // Create: only the user themselves, role must default to "user"
+      allow create: if isSignedIn()
+                    && isNEUEmail()
+                    && isOwner(uid)
+                    && request.resource.data.role            == 'user'
+                    && request.resource.data.isSetupComplete == false
+                    // isBlocked must start as false
+                    && (!request.resource.data.keys().hasAny(['isBlocked'])
+                        || request.resource.data.isBlocked == false);
+
+      // Update:
+      //   - Users can only touch onboarding fields (college_office, isSetupComplete)
+      //   - Admin can touch any field, INCLUDING isBlocked, blockReason, etc.
+      //   - Nobody can self-elevate role
+      allow update: if isSignedIn() && isNEUEmail() && (
+        (
+          isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['college_office', 'isSetupComplete'])
+          && request.resource.data.role == resource.data.role
+        )
+        || isAdmin()
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  /logs/{logId}
+    //  BLOCKED users cannot create visit logs.
+    //  This is the hard security gate — even if the client-side
+    //  check is bypassed, this rule prevents the write.
+    // ═══════════════════════════════════════════════════════
+
+    match /logs/{logId} {
+
+      allow get:  if isSignedIn() && isNEUEmail()
+                  && (resource.data.uid == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isSignedIn()
+                    && isNEUEmail()
+                    // ── BLOCK GATE ──────────────────────────────
+                    && isNotBlocked()
+                    // ── Ownership ────────────────────────────────
+                    && request.resource.data.uid       == request.auth.uid
+                    && request.resource.data.userEmail == request.auth.token.email
+                    // ── Valid reason ─────────────────────────────
+                    && request.resource.data.reason in [
+                         'Reading', 'Research', 'Computer Use', 'Studying'
+                       ]
+                    // ── Server timestamp (no backdating) ─────────
+                    && request.resource.data.timestamp == request.time;
+
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  /blockHistory/{uid}/events/{eventId}
+    //  Audit trail. Written only by admin via Cloud Functions
+    //  or trusted server context. Read by admin only.
+    // ═══════════════════════════════════════════════════════
+
+    match /blockHistory/{uid}/events/{eventId} {
+
+      // Only admin may read block history
+      allow read: if isAdmin();
+
+      // Admin can create block events
+      // (In production, prefer a Cloud Function to avoid exposing this)
+      allow create: if isAdmin()
+                    && request.resource.data.action in ['blocked', 'unblocked']
+                    && request.resource.data.adminUid == request.auth.uid;
+
+      // Events are immutable
+      allow update, delete: if false;
+    }
+
+  }
+}

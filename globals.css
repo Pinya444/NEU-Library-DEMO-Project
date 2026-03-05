@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS custom properties ─────────────────────────────────── */
+:root {
+  --neu-maroon:  #7B1C2E;
+  --neu-gold:    #C9A84C;
+  --neu-dark:    #1A0A0F;
+  --neu-cream:   #FAF6F0;
+  --neu-muted:   #8A7A72;
+  --neu-border:  #E8DDD5;
+}
+
+/* ── Base resets ────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing:  antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--neu-cream);
+  color:            var(--neu-dark);
+}
+
+/* ── Scrollbar styling ──────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D1C5BC; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #B0A099; }
+
+/* ── Focus ring ─────────────────────────────────────────────── */
+:focus-visible {
+  outline:        2px solid var(--neu-maroon);
+  outline-offset: 2px;
+}
+
+/* ── Keyframe animations ────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.4; }
+}
