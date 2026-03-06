@@ -60,7 +60,7 @@ function CheckInContent() {
         <div className="mb-8" style={{ animation:"fadeUp 0.5s ease both" }}>
           <div className="inline-flex items-center gap-2.5 mb-5 bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm">
             {neuUser?.photoURL
-              ? <img src={neuUser.photoURL} alt="" className="w-7 h-7 rounded-full ring-2" style={{ ringColor:"#7B1C2E" }}/>
+              ? <img src={neuUser.photoURL} alt="" className="w-7 h-7 rounded-full ring-2" />
               : <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
                      style={{ background:"linear-gradient(135deg,#7B1C2E,#C9A84C)" }}>{neuUser?.fullName?.[0]}</div>
             }
