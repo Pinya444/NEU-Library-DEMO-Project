@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 const COUNTDOWN = 8;
 
-export default function WelcomePage() {
+function WelcomeContent() {
   const router       = useRouter();
   const params       = useSearchParams();
   const { neuUser, signOut } = useAuth();
@@ -34,7 +34,6 @@ export default function WelcomePage() {
              style={{ left:`${p.x}%`, top:"-10px", width:p.size, height:p.size, background:p.color, opacity:0.7,
                       animation:`fall ${3+Math.random()*3}s ${p.delay}s linear infinite` }}/>
       ))}
-
       <div className="relative z-10 text-center max-w-sm w-full">
         <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl mx-auto mb-6"
              style={{ background:"linear-gradient(135deg,#7B1C2E,#C9A84C)", boxShadow:"0 0 48px rgba(201,168,76,0.4)",
@@ -48,7 +47,6 @@ export default function WelcomePage() {
         <p className="text-white/50 text-sm mb-6" style={{ animation:"fadeUp 0.5s 0.4s ease both", opacity:0 }}>
           Your visit has been logged successfully.
         </p>
-
         <div className="flex items-center justify-center gap-2 mb-8"
              style={{ animation:"fadeUp 0.5s 0.5s ease both", opacity:0 }}>
           <span className="text-2xl">{icons[reason]??"📖"}</span>
@@ -57,7 +55,6 @@ export default function WelcomePage() {
             {reason}
           </span>
         </div>
-
         {neuUser && (
           <div className="flex items-center justify-center gap-3 mb-8"
                style={{ animation:"fadeUp 0.5s 0.55s ease both", opacity:0 }}>
@@ -71,7 +68,6 @@ export default function WelcomePage() {
             </div>
           </div>
         )}
-
         <div className="flex flex-col items-center gap-3" style={{ animation:"fadeUp 0.5s 0.6s ease both", opacity:0 }}>
           <p className="text-xs text-white/30">Returning to check-in in <span className="text-white/60 font-semibold">{count}s</span></p>
           <button onClick={signOut}
@@ -81,12 +77,24 @@ export default function WelcomePage() {
           </button>
         </div>
       </div>
-
       <style>{`
         @keyframes fall { from{transform:translateY(-10px) rotate(0deg);opacity:0.7} to{transform:translateY(110vh) rotate(360deg);opacity:0} }
         @keyframes welcomePop { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
     </main>
+  );
+}
+
+export default function WelcomePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center"
+           style={{ background:"linear-gradient(145deg,#1A0A0F,#2D0A12)" }}>
+        <div className="text-5xl animate-bounce">📖</div>
+      </div>
+    }>
+      <WelcomeContent/>
+    </Suspense>
   );
 }
